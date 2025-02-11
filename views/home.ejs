@@ -5,15 +5,43 @@
   <meta name="viewport" content="width=device-width, intial-scale=1.0">
   <link rel="stylesheet" href="/styles.css">
   <title>Characters</title>
+
+  <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
 </head>
 <body>
   <h1>Lord of the Rings Characters</h1>
-  <ul>
-    <% characters.forEach(character => { %>
-      <li>
-        <a href="/character?id=<%= character.id %>"><%= character.name %></a>
-      </li>
-     <% }) %>
-  </ul>
+  <div id="app"></div>
+
+  <script>
+    const characters = JSON.parse(`<%- characters %>`);
+
+    function CharacterList(props) {
+      return React.createElement(
+        "ul",
+        null,
+        props.characters.map(character =>
+          React.createElement(
+            "li",
+            { key: character._id }, 
+            React.createElement(
+              "a",
+              { href: `/character?id=${character._id}` },
+              character.name
+            )
+          )
+        )
+      );
+    }
+
+    function App() {
+      return React.createElement("div", null,
+                                React.createElement("h2", null, "Character List"),
+                                React.createElement(CharacterList, { characters: characters })
+                                );
+    }
+
+    ReactDOM.render(React.createElement(App), document.getElementById("app"));
+  </script>
 </body>
 </html>

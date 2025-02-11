@@ -14,16 +14,16 @@ app.use(express.static("public"));
 app.use(express.json());
 app.use(cors());
 
-app.get("/", async (req, res) => {
-  try {
-    const characters = await Character.find(); 
-    res.render("home", { characters }); 
-  } catch (error) {
+app.get("/", (req, res) => {
+  Character.find()
+  .then(characters => {
+    res.render("home", { characters: JSON.stringify(characters) });
+  })
+  .catch(error => {
     console.error("Error fetching characters:", error);
     res.status(500).send("Internal Server Error");
-  }
+  });
 });
-
 app.get("/character", async (req, res) => {
   const id = req.query.id; 
 
