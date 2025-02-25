@@ -14,7 +14,7 @@
   <div id="app"></div>
 
   <script>
-    const characters = JSON.parse(`<%- characters %>`);
+    const { useState, useEffect } = React;
 
     function CharacterList({ characters, onSelect }) {
       return React.createElement(
@@ -30,31 +30,40 @@
       );
     }
 
-    function Detail({ character, onClear, onEdit }) {
-      if(!character) return React.createElement("p", null, "Select a character to view details");
+    function Detail({ character, onClear, onEdit, onSave, onDelete }) {
+      if (!character) return React.createElement("p", null, "Select a character to view details");
 
       return React.createElement("div", null,
-          React.createElement("h2", null, character.name),
-          React.createElement("form", { onSubmit: (e) => e.preventDefault() }, 
-            React.createElement("label", null, "Name:", 
-              React.createElement("input", { type: "text", value: character.name, onChange: (e) => onEdit("name", e.target.value) })
-            ),
-            React.createElement("label", null, "Race:", 
-              React.createElement("input", { type: "text", value: character.race, onChange: (e) => onEdit("race", e.target.value) })
-            ),
-            React.createElement("label", null, "Weapon:", 
-              React.createElement("input", { type: "text", value: character.weapon, onChange: (e) => onEdit("weapon", e.target.value) })
-            ),
-            React.createElement("label", null, "Age:", 
-              React.createElement("input", { type: "text", value: character.age, onChange: (e) => onEdit("age", e.target.value) })
-            ),
-            React.createElement("button", { type: "button", onClick: onClear }, "Clear")
-          )
-        );
-      }
+    React.createElement("h2", null, character.name),
+    React.createElement("form", { onSubmit: (e) => e.preventDefault() },
+    ["name", "race", "weapon", "age"].map(field =>
+      React.createElement("label", { key: field },
+        field.charAt(0).toUpperCase() + field.slice(1) + ":",
+        React.createElement("input", {
+          type: "text",
+          value: character[field] || "",
+          onChange: (e) => onEdit(field, e.target.value)
+        })
+      )
+    ),
+    React.createElement("button", { type: "button", onClick: onClear }, "Clear"),
+    React.createElement("button", { type: "button", onClick: onSave }, "Save"),
+    character._id && React.createElement("button", { type: "button", onClick: onDelete}, "Delete")
+    )
+  );
+}
 
-    function App() {
-      const [selectedCharacter, setSelectedCharacter] = React.useState(null);
+  function App() {
+      const [characters, setCharacters] = useState([]);
+      const [selectedCharacter, setSelectedCharacter] = useState(null);
+
+      // Fetch initial data on page load
+      useEffect(() => {
+        fetch("/api/characters")
+          .then(res => res.json())
+          .then(data => setCharacters(data.data))
+          .catch(err => console.error("Error loading characters:", err));
+      }, []);
 
       const handleSelectCharacter = (character) => {
         setSelectedCharacter({ ...character });
@@ -65,14 +74,54 @@
       };
 
       const handleEdit = (field, value) => {
-        setSelectedCharacter(prev => ({ ...prev, [field]: value}));
+        setSelectedCharacter(prev => ({ ...prev, [field]: value }));
+      };
+
+      const handleSave = () => {
+        if (!selectedCharacter.name) {
+          alert("Name is required");
+          return;
+        }
+        fetch("/api/characters", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(selectedCharacter)
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            handleClear();
+            fetch("/api/characters")
+              .then(res => res.json())
+              .then(data => setCharacters(data.data));
+          }
+        });
+      };
+
+      const handleDelete = () => {
+        if (!selectedCharacter._id) return;
+        fetch(`/api/characters/${selectedCharacter._id}`, { method: "DELETE" })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              handleClear();
+              setCharacters(characters.filter(c => c._id !== selectedCharacter._id));
+            }
+          });
       };
 
       return React.createElement("div", null,
         React.createElement(CharacterList, { characters: characters, onSelect: handleSelectCharacter }),
-        React.createElement(Detail, { character: selectedCharacter, onClear: handleClear, onEdit: handleEdit })
+        React.createElement(Detail, { 
+          character: selectedCharacter, 
+          onClear: handleClear, 
+          onEdit: handleEdit, 
+          onSave: handleSave,
+          onDelete: handleDelete 
+        })
       );
     }
+
     ReactDOM.render(React.createElement(App), document.getElementById("app"));
   </script>
 </body>

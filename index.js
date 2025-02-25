@@ -24,21 +24,6 @@ app.get("/", (req, res) => {
     res.status(500).send("Internal Server Error");
   });
 });
-app.get("/character", async (req, res) => {
-  const id = req.query.id; 
-
-  try {
-    const character = await Character.findById(id); 
-    if (character) {
-      res.render("detail", { character }); 
-    } else {
-      res.status(404).send("<h1>404 Not Found</h1><p>Character not found.</p>");
-    }
-  } catch (error) {
-    console.error("Error fetching character:", error);
-    res.status(500).send("Internal Server Error");
-  }
-});
 
 app.get("/api/characters", async (req, res) => {
   try {
@@ -67,6 +52,10 @@ app.get("/api/characters/:id", async (req, res) => {
 
 app.post("/api/characters", async (req, res) => {
   const { id, name, race, weapon, age } = req.body;
+
+  if (!name) {
+    return res.status(400).json({ success: false, message: "Name is required." });
+  }
   try {
     let character;
     if(id) {
@@ -98,22 +87,6 @@ app.delete("/api/characters/:id", async (req, res) => {
   } catch(error) {
     console.error("Error deleting character:", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
-  }
-});
-
-app.delete("/character", async (req, res) => {
-  const id = req.query.id; 
-
-  try {
-    const result = await Character.findByIdAndDelete(id); 
-    if (result) {
-      res.status(200).send({ success: true, message: "Character deleted successfully" });
-    } else {
-      res.status(404).send({ success: false, message: "Character not found" });
-    }
-  } catch (error) {
-    console.error("Error deleting character:", error);
-    res.status(500).send({ success: false, message: "Internal Server Error" });
   }
 });
 
